@@ -425,9 +425,10 @@ esp_err_t audio_output_init(void) {
       bind(fd, (const struct sockaddr *)&addr, sizeof(addr)) < 0 || listen(fd, 2) < 0) {
     goto fail;
   }
-  // Keep the encoder off the core that receives and schedules AirPlay PCM.
+  // Leave core 0 to buffered AirPlay ingest and decoding. The render task
+  // preempts the encoder on core 1 to keep the PCM clock steady.
   if (xTaskCreatePinnedToCore(encoding_task, "sonos_aac", ENCODER_STACK_BYTES,
-                             NULL, 7, &s_encoding_task, 0) != pdPASS ||
+                             NULL, 7, &s_encoding_task, 1) != pdPASS ||
       xTaskCreate(http_task, "sonos_http", 6144, (void *)(intptr_t)fd, 5, &s_http) != pdPASS ||
       xTaskCreate(control_task, "sonos_control", 6144, NULL, 5, &s_controller) != pdPASS ||
       playback_events_register(on_playback, NULL) != 0) {

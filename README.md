@@ -35,7 +35,7 @@ The release image includes the bootloader, partition table, application, and set
 
 - Startup can take several seconds while AirPlay starts and the Play:3 buffers the network stream. Use the bridge for music. Video lip sync and Sonos grouping are outside the tested configuration.
 - If the bridge appears but stays silent, check the Play:3 address, room volume, and whether the router isolates Wi-Fi clients. If the Sonos address changed, update it and reconnect AirPlay.
-- This is a preview. Playback stalls were observed during the original hardware test. The release separates PCM scheduling from AAC encoding and logs PCM drops, AAC drops, and encoder errors to help diagnose interruptions.
+- This is a preview. Playback stalls were observed during the original hardware test. The release runs PCM scheduling and AAC encoding as separate tasks and logs PCM drops, AAC drops, and encoder errors to help diagnose interruptions.
 
 ## Build from source
 
