@@ -57,6 +57,8 @@ set( SRC_FILES
 list(APPEND SRC_FILES "audio/audio_output_common.c")
 if(CONFIG_AUDIO_OUTPUT_SPDIF)
     list(APPEND SRC_FILES "audio/audio_output_spdif.c")
+elseif(CONFIG_AUDIO_OUTPUT_SONOS)
+    list(APPEND SRC_FILES "audio/audio_output_sonos.c")
 elseif(CONFIG_AUDIO_OUTPUT_USB)
     list(APPEND SRC_FILES "audio/audio_output_usb.c")
 else()

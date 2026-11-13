@@ -188,6 +188,10 @@ menu "Airplay ESP Configuration"
                 The USB stream defaults to 48 kHz and must match the UAC
                 sample-rate setting. AirPlay audio is resampled automatically
                 when needed.
+
+        config AUDIO_OUTPUT_SONOS
+            bool "Sonos over HTTP (AAC)"
+            depends on IDF_TARGET_ESP32S3 && SPIRAM
     endchoice
 
     config SOFTWARE_EQ

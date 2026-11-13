@@ -28,7 +28,7 @@ firmware binaries published in GitHub releases.
 | Component | License | GPL-3.0 compatible |
 | --- | --- | --- |
 | ESP-IDF (incl. Wi-Fi, Bluetooth and PHY libraries) | Apache-2.0 | Yes |
-| `espressif/esp_audio_codec` (ALAC and AAC decoders, precompiled) | Espressif Modified MIT | **No** — see below |
+| `espressif/esp_audio_codec` (ALAC decoder and AAC codec, precompiled) | Espressif Modified MIT | **No** — see below |
 | `espressif/mdns` | Apache-2.0 | Yes |
 | `espressif/libsodium` | ISC | Yes |
 | `espressif/tinyusb` | MIT | Yes |
@@ -40,8 +40,8 @@ firmware binaries published in GitHub releases.
 
 ### espressif/esp_audio_codec
 
-This component provides the ALAC and AAC decoders and is distributed only as
-precompiled archives. Its license permits use "EXCLUSIVELY with Espressif
+This component provides the ALAC decoder and AAC encoder and decoder as
+precompiled archives. Its [license](licenses/esp_audio_codec.txt) permits use "EXCLUSIVELY with Espressif
 Systems products" and prohibits redistribution for use with non-Espressif
 products. A field-of-use restriction of this kind is a further restriction
 within the meaning of section 7 of the GPL, so the component cannot be combined

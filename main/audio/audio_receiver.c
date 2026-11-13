@@ -828,6 +828,10 @@ void audio_receiver_get_stats(audio_stats_t *stats) {
 }
 
 size_t audio_receiver_read(int16_t *buffer, size_t samples) {
+  return audio_receiver_read_at(buffer, samples, esp_timer_get_time());
+}
+
+size_t audio_receiver_read_at(int16_t *buffer, size_t samples, int64_t local_us) {
   if (!buffer || samples == 0) {
     return 0;
   }
@@ -837,7 +841,7 @@ size_t audio_receiver_read(int16_t *buffer, size_t samples) {
     // The scheduler works in the sender's clock domain: network = local +
     // offset.
     const int64_t playout_network_ns =
-        audio_output_get_next_playout_time_ns(esp_timer_get_time()) +
+        audio_output_get_next_playout_time_ns(local_us) +
         audio_receiver_network_offset_ns(NULL);
     return audio_engine_v2_render(&receiver.engine_v2, playout_network_ns,
                                   buffer, samples);

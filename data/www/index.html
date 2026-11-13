@@ -42,6 +42,14 @@
 <div id='ss-msg' class='msg'></div></div>
 </div>
 </div>
+<div class='card' id='sonos-card' hidden><h2>Sonos</h2>
+<form id='sonos-form'>
+<div class='form-group'><label for='sonos-ip'>Sonos player IPv4 address</label>
+<div class='row'><input type='text' id='sonos-ip' maxlength='15' placeholder='192.168.1.50' required>
+<button type='submit' class='btn btn-primary' id='sonos-save'>Save</button></div>
+<p class='hint'>Use the player's address from the Sonos app or your router. Changes apply the next time AirPlay starts playing.</p></div>
+<div id='sonos-msg' class='msg' role='status'></div>
+</form></div>
 <div class='card' id='audio'><h2>Audio</h2>
 <div class='form-group' id='chan-group'><label for='chan-mode' id='chan-label'>Output channel</label>
 <div class='row'><select id='chan-mode' onchange='saveChannel()'>
@@ -106,6 +114,32 @@
 <script>
 var $=function(id){return document.getElementById(id);};
 function msg(id,txt,type){var e=$(id);e.className='msg '+type;e.textContent=txt;}
+
+Shell.info().then(async function(info){
+  if(!info.sonos_supported)return;
+  $('sonos-card').hidden=false;
+  try{
+    var target=await Shell.get('/api/sonos/target');
+    $('sonos-ip').value=target.ip;
+  }catch(e){
+    msg('sonos-msg',e.message,'err');
+  }
+}).catch(function(){});
+
+$('sonos-form').addEventListener('submit',async function(event){
+  event.preventDefault();
+  var input=$('sonos-ip'),button=$('sonos-save');
+  button.disabled=true;
+  try{
+    var target=await Shell.post('/api/sonos/target',{ip:input.value.trim()});
+    input.value=target.ip;
+    msg('sonos-msg','Saved. Start a new AirPlay session to use this address.','ok');
+  }catch(e){
+    msg('sonos-msg',e.message,'err');
+  }finally{
+    button.disabled=false;
+  }
+});
 
 /* ---- audio ---- */
 var chanLocked=false,dualDevices=1;

@@ -1,118 +1,55 @@
-<div align="center">
+# AirPlay to Sonos on ESP32-S3
 
-<img src="docs/assets/logo_airplay_esp32.png" alt="AirPlay ESP32" width="400">
+[简体中文](README.zh-CN.md) · [Firmware releases](https://github.com/yanhuicsdn/airplay-sonos-esp32/releases)
 
-# ESP32 AirPlay 2 Receiver
+Play music from an iPhone on a Sonos Play:3 using a USB-powered ESP32-S3. The ESP32 receives AirPlay audio, encodes it as stereo AAC, and tells the Sonos to pull the stream over the local network. A computer is needed for initial USB flashing. No DAC, analog cable, or Sonos firmware modification is required.
 
-**Stream music from your Apple devices — or from any phone over Bluetooth — to any speaker for about $10**
-
-[![GitHub stars](https://img.shields.io/github/stars/rbouteiller/airplay-esp32?style=flat-square)](https://github.com/rbouteiller/airplay-esp32/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/rbouteiller/airplay-esp32?style=flat-square)](https://github.com/rbouteiller/airplay-esp32/network)
-[![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue?style=flat-square)](LICENSE)
-[![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v6.1+-red?style=flat-square)](https://docs.espressif.com/projects/esp-idf/)
-[![Platform](https://img.shields.io/badge/platform-ESP32%20%7C%20S2%20%7C%20S3%20%7C%20C5-green?style=flat-square)](https://www.espressif.com/en/products/socs)
-
-### [Documentation](https://rbouteiller.github.io/airplay-esp32/) · [Install from your browser](https://rbouteiller.github.io/airplay-esp32/getting-started/flashing/) · [Troubleshooting](https://rbouteiller.github.io/airplay-esp32/troubleshooting/)
-
-</div>
-
----
-
-## What is this?
-
-This turns a cheap ESP32 board into a wireless AirPlay 2 speaker. Plug it into any
-amplifier or powered speakers and it shows up on your iPhone, iPad or Mac just like a
-HomePod or an AirPlay TV.
-
-Works with **ESP32**, **ESP32-S2**, **ESP32-S3** and **ESP32-C5** chips, including the
-[SqueezeAMP](https://github.com/philippe44/SqueezeAMP) (ESP32 + TAS5756) and
-[Esparagus Audio Brick](https://sonocotta.com/espragus-audio-brick/) (ESP32 + TAS5825M)
-boards, which have amplifiers built in.
-
-ESP32-based boards also support **Bluetooth A2DP**, so anything that can pair with a
-Bluetooth speaker can play to them when AirPlay is idle. The Esparagus Audio Brick
-additionally supports **wired Ethernet** through an optional W5500 module.
-
-**No cloud. No app. Just tap and play.**
-
-## Quick start
-
-The fastest route is the browser installer — no toolchain, no command line:
-
-**[→ Install from your browser](https://rbouteiller.github.io/airplay-esp32/getting-started/flashing/)**
-
-Building from parts instead? You need an ESP32-S3 dev board, a PCM5102A DAC and a female
-pin header, roughly $10 total, and no soldering. See the
-[getting started guide](https://rbouteiller.github.io/airplay-esp32/getting-started/).
-
-Building from source:
-
-```bash
-git clone --recursive https://github.com/rbouteiller/airplay-esp32
-cd airplay-esp32
-pio run -e esp32s3 -t upload
-pio run -e esp32s3 -t uploadfs   # required — writes the web UI to SPIFFS
+```text
+iPhone -- AirPlay over Wi-Fi --> ESP32-S3 -- AAC over HTTP --> Sonos Play:3
 ```
 
-## Features
+## Hardware
 
-- **AirPlay 2** — appears natively in Control Center and every AirPlay-capable app
-- **ALAC and AAC decoding** — live streaming (Siri, calls) and music playback
-- **Multi-room** — PTP-based timing for synchronised playback
-- **Bluetooth A2DP** — receive audio from phones and tablets (ESP32 boards only)
-- **W5500 Ethernet** — wired networking with automatic WiFi failover
-- **Web configuration** and **OTA updates** — USB is only needed for the first flash
-- **48 kHz output** — optional 44.1 → 48 kHz conversion via a sinc resampler
-- **Displays** — optional OLED or 320×170 colour TFT with track metadata
-- **Hardware buttons** — optional play/pause, volume and track skip
+- **ESP32-S3-WROOM-1-N16R8** development board with 16 MB of flash and 8 MB of octal PSRAM. Check the full module marking.
+- **Sonos Play:3**, tested as a standalone player in a Sonos S1 system.
+- A 2.4 GHz Wi-Fi network for the ESP32. The iPhone and Play:3 must be on the same local network as the bridge. The Play:3 can use Ethernet.
 
-Audio only, one speaker per board, and a decent WiFi signal is required.
+## Flash and set up
 
-## Documentation
+1. Download `airplay-sonos-esp32s3-n16r8.bin` from [Releases](https://github.com/yanhuicsdn/airplay-sonos-esp32/releases). Flash the merged image to address `0x0` over USB. This overwrites existing firmware. Replace `PORT` with your board’s serial port, such as `/dev/cu.usbmodem…`, `/dev/ttyACM0`, or `COM5`.
 
-| | |
-| --- | --- |
-| [Getting started](https://rbouteiller.github.io/airplay-esp32/getting-started/) | Shopping list, assembly, flashing, first boot |
-| [Supported boards](https://rbouteiller.github.io/airplay-esp32/boards/) | SqueezeAMP, Esparagus Audio Brick, XIAO ESP32-C5, custom boards |
-| [Features](https://rbouteiller.github.io/airplay-esp32/features/bluetooth/) | Bluetooth, Ethernet, displays, buttons, AirPlay tuning |
-| [Reference](https://rbouteiller.github.io/airplay-esp32/reference/build-environments/) | Build environments, SPIFFS, OTA, architecture |
-| [Troubleshooting](https://rbouteiller.github.io/airplay-esp32/troubleshooting/) | No sound, no setup WiFi, dropouts, build errors |
+   ```sh
+   python -m pip install "esptool>=5,<6"
+   python -m esptool --chip esp32s3 --port PORT write-flash 0x0 airplay-sonos-esp32s3-n16r8.bin
+   ```
 
-## Contributing
+   If esptool cannot connect, hold **BOOT**, tap **RESET**, then release **BOOT** and retry.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the
-[contributing guide](https://rbouteiller.github.io/airplay-esp32/contributing/).
-Documentation lives in [`docs/`](docs/) and is built with [Zensical](https://zensical.org/)
-— every page on the site has an edit link that takes you straight to the GitHub editor.
+2. On a fresh board, join the open Wi-Fi network **ESP32-AirPlay-Setup**. Open **http://192.168.4.1/**, choose **Set up Wi-Fi**, and connect the board to your 2.4 GHz network.
+3. Rejoin your normal Wi-Fi and open the ESP32’s assigned IP address in a browser. You can find it in your router’s client list. Under **Sonos**, enter your Play:3’s IPv4 address from the Sonos app or router and click **Save**. A DHCP reservation keeps that address stable.
+4. Start music on your iPhone, open the audio AirPlay picker in Control Center, and choose **ESP32 AirPlay**. If you change the Sonos address while playing, disconnect and start a new AirPlay session.
 
-## Acknowledgements
+The release image includes the bootloader, partition table, application, and setup pages. Flash it over USB so the app and web pages are updated together.
 
-- [Shairport Sync](https://github.com/mikebrady/shairport-sync) — the reference AirPlay implementation
-- [openairplay/airplay2-receiver](https://github.com/openairplay/airplay2-receiver) — Python AirPlay 2 implementation
-- [Espressif](https://github.com/espressif) — ESP-IDF framework and codec libraries
+## Playback behavior
 
-## License
+- Startup can take several seconds while AirPlay starts and the Play:3 buffers the network stream. Use the bridge for music. Video lip sync and Sonos grouping are outside the tested configuration.
+- If the bridge appears but stays silent, check the Play:3 address, room volume, and whether the router isolates Wi-Fi clients. If the Sonos address changed, update it and reconnect AirPlay.
+- This is a preview. Playback stalls were observed during the original hardware test. The release separates PCM scheduling from AAC encoding and logs PCM drops, AAC drops, and encoder errors to help diagnose interruptions.
 
-Copyright © 2026 Rémi Bouteiller and the airplay-esp32 contributors.
+## Build from source
 
-This program is free software: you can redistribute it and/or modify it under the terms of
-the GNU General Public License as published by the Free Software Foundation, either
-version 3 of the License, or (at your option) any later version. It is distributed in the
-hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See [LICENSE](LICENSE) for the
-full text.
+Use [ESP-IDF v6.1](https://github.com/espressif/esp-idf/tree/v6.1) with its environment activated and the ESP32-S3 tools installed.
 
-[LICENSE-EXCEPTION](LICENSE-EXCEPTION) grants the additional permission needed to link
-this firmware against Espressif's closed binary components — notably the `esp_audio_codec`
-ALAC and AAC decoders, whose license restricts use to Espressif chips. Without it, neither
-this project nor anyone downstream could ship a working binary.
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) lists the licenses of everything else
-that ends up in the firmware.
+```sh
+git clone --recurse-submodules --branch v0.1.0 https://github.com/yanhuicsdn/airplay-sonos-esp32.git
+cd airplay-sonos-esp32
+. /path/to/esp-idf/export.sh
+./scripts/build-sonos.sh
+```
 
-Building a product on this? You may, including commercially, provided you release your
-source under the GPL as well.
+The merged image is written to `build-sonos/airplay-sonos-esp32s3-n16r8.bin`. The release’s corresponding source archive includes the pinned submodule. ESP-IDF Component Manager fetches the build dependencies.
 
-## Legal
+## Credits and license
 
-This is an independent project based on protocol analysis. Not affiliated with Apple Inc.
-Not guaranteed to work with future iOS or macOS versions. Provided as-is without warranty.
+Based on [rbouteiller/airplay-esp32 at `35be6fc`](https://github.com/rbouteiller/airplay-esp32/tree/35be6fcb58f7224a50b9f8500482fa8a2a989307). The project is distributed under [GPL-3.0-or-later](LICENSE) with the [additional permission for Espressif binary components](LICENSE-EXCEPTION). See [third-party notices](THIRD-PARTY-NOTICES.md) for dependency licenses and protocol credits.

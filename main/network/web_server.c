@@ -30,6 +30,11 @@
 #include "playback_events.h"
 #include "audio_delay.h"
 #include "audio_output.h"
+
+#ifdef CONFIG_AUDIO_OUTPUT_SONOS
+#include "audio_output_sonos.h"
+#include "lwip/inet.h"
+#endif
 #include "esp_app_desc.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -664,6 +669,42 @@ static char *recv_body(httpd_req_t *req, size_t max_len) {
   buf[len] = '\0';
   return buf;
 }
+
+#ifdef CONFIG_AUDIO_OUTPUT_SONOS
+static esp_err_t sonos_target_get_handler(httpd_req_t *req) {
+  char ip[INET_ADDRSTRLEN];
+  if (sonos_get_target(ip, sizeof(ip)) != ESP_OK) {
+    return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+                              "Could not read Sonos address");
+  }
+  char response[sizeof("{\"ip\":\"\"}") + INET_ADDRSTRLEN];
+  snprintf(response, sizeof(response), "{\"ip\":\"%s\"}", ip);
+  httpd_resp_set_type(req, "application/json");
+  return httpd_resp_sendstr(req, response);
+}
+
+static esp_err_t sonos_target_post_handler(httpd_req_t *req) {
+  char *body = recv_body(req, 128);
+  if (!body) {
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Expected an IPv4 address");
+    return ESP_FAIL;
+  }
+  cJSON *json = cJSON_ParseWithOpts(body, NULL, true);
+  free(body);
+  const cJSON *ip = cJSON_GetObjectItemCaseSensitive(json, "ip");
+  const esp_err_t err = cJSON_IsString(ip) ? sonos_set_target(ip->valuestring)
+                                          : ESP_ERR_INVALID_ARG;
+  cJSON_Delete(json);
+  if (err == ESP_ERR_INVALID_ARG) {
+    return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Expected an IPv4 address");
+  }
+  if (err != ESP_OK) {
+    return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
+                              "Could not save Sonos address");
+  }
+  return sonos_target_get_handler(req);
+}
+#endif
 
 /* True for a JSON number that is a whole value inside [lo, hi]. */
 static bool json_int_in_range(const cJSON *v, int lo, int hi) {
@@ -1471,6 +1512,10 @@ static esp_err_t system_info_handler(httpd_req_t *req) {
   cJSON_AddBoolToObject(info, "hf1_supported", false);
   cJSON_AddBoolToObject(info, "hf3_supported", false);
 #endif
+#ifdef CONFIG_AUDIO_OUTPUT_SONOS
+  cJSON_AddBoolToObject(info, "sonos_supported", true);
+#endif
+
 #ifdef CONFIG_SENDSPIN_ENABLE
   cJSON_AddBoolToObject(info, "sendspin_supported", true);
   cJSON_AddBoolToObject(info, "sendspin_enabled",
@@ -3263,6 +3308,9 @@ esp_err_t web_server_start(uint16_t port) {
   // unchecked, so an undercount silently drops whatever registers last, which
   // is log_stream's /ws/logs. Keep these in step with the handlers below.
   config.max_uri_handlers = 43; // 37 here + /ws/logs, plus 5 spare
+#ifdef CONFIG_AUDIO_OUTPUT_SONOS
+  config.max_uri_handlers += 2; // Sonos target get/post
+#endif
 #ifdef CONFIG_SENDSPIN_ENABLE
   config.max_uri_handlers += 5; // /sendspin + mode get/post + unpair + reset
   // The Sendspin server holds its WebSocket open for as long as the speaker
@@ -3347,6 +3395,18 @@ esp_err_t web_server_start(uint16_t port) {
                                  .method = HTTP_POST,
                                  .handler = wifi_config_handler};
   register_uri(&wifi_config_uri);
+
+#ifdef CONFIG_AUDIO_OUTPUT_SONOS
+  httpd_uri_t sonos_target_get_uri = {.uri = "/api/sonos/target",
+                                     .method = HTTP_GET,
+                                     .handler = sonos_target_get_handler};
+  register_uri(&sonos_target_get_uri);
+
+  httpd_uri_t sonos_target_post_uri = {.uri = "/api/sonos/target",
+                                      .method = HTTP_POST,
+                                      .handler = sonos_target_post_handler};
+  register_uri(&sonos_target_post_uri);
+#endif
 
   httpd_uri_t device_name_uri = {.uri = "/api/device/name",
                                  .method = HTTP_POST,
