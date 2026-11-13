@@ -2,7 +2,8 @@
 
 [简体中文](README.zh-CN.md) · [Firmware releases](https://github.com/yanhuicsdn/airplay-sonos-esp32/releases)
 
-Play music from an iPhone on a Sonos Play:3 using a USB-powered ESP32-S3. The ESP32 receives AirPlay audio, encodes it as 44.1 kHz stereo AAC, and tells the Sonos to pull the stream over the local network. A computer is needed for initial USB flashing. No DAC, analog cable, or Sonos firmware modification is required.
+Play music from an iPhone on a Sonos Play:3 using a USB-powered ESP32-S3. Rejoin your normal Wi-Fi. If the bridge finds one Play:3, it remembers that speaker automatically. If you have several, open the ESP32’s IP address in a browser and enter the chosen speaker’s IPv4 address under **Sonos**. The router’s client list shows the ESP32’s address. The Sonos app or router shows the speaker’s address.
+4. Start music on your iPhone and select **ESP32 AirPlay** in Control Center. If the speaker’s IP changes, the bridge finds it by device ID the next time AirPlay starts. Saving an empty address in the **Sonos** settings resets automatic selection.
 
 ```text
 iPhone -- AirPlay over Wi-Fi --> ESP32-S3 -- AAC over HTTP --> Sonos Play:3
@@ -34,7 +35,7 @@ The release image includes the bootloader, partition table, application, and set
 ## Playback behavior
 
 - Startup can take several seconds while AirPlay starts and the Play:3 buffers the network stream. Use the bridge for music. Video lip sync and Sonos grouping are outside the tested configuration.
-- If the bridge appears but stays silent, check the Play:3 address, room volume, and whether the router isolates Wi-Fi clients. If the Sonos address changed, update it and reconnect AirPlay.
+- If the bridge appears but stays silent, check the Play:3 address, room volume, and whether the router isolates Wi-Fi clients. Automatic discovery needs SSDP multicast on the local network. If your network blocks multicast, you can enter the current speaker IP in the setup page.
 - This is a preview. Playback stalls were observed during the original hardware test. The release runs PCM scheduling and AAC encoding as separate tasks and logs PCM drops, AAC drops, and encoder errors to help diagnose interruptions.
 
 ## Build from source
@@ -42,7 +43,7 @@ The release image includes the bootloader, partition table, application, and set
 Use [ESP-IDF v6.1](https://github.com/espressif/esp-idf/tree/v6.1) with its environment activated and the ESP32-S3 tools installed.
 
 ```sh
-git clone --recurse-submodules --branch v0.1.1 https://github.com/yanhuicsdn/airplay-sonos-esp32.git
+git clone --recurse-submodules https://github.com/yanhuicsdn/airplay-sonos-esp32.git
 cd airplay-sonos-esp32
 . /path/to/esp-idf/export.sh
 ./scripts/build-sonos.sh

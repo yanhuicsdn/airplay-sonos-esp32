@@ -44,10 +44,11 @@
 </div>
 <div class='card' id='sonos-card' hidden><h2>Sonos</h2>
 <form id='sonos-form'>
-<div class='form-group'><label for='sonos-ip'>Sonos player IPv4 address</label>
-<div class='row'><input type='text' id='sonos-ip' maxlength='15' placeholder='192.168.1.50' required>
+<div id='sonos-target' class='hint'></div>
+<div class='form-group'><label for='sonos-ip'>Select a Sonos player by IPv4 address</label>
+<div class='row'><input type='text' id='sonos-ip' maxlength='15' placeholder='192.168.1.50'>
 <button type='submit' class='btn btn-primary' id='sonos-save'>Save</button></div>
-<p class='hint'>Use the player's address from the Sonos app or your router. Changes apply the next time AirPlay starts playing.</p></div>
+<p class='hint'>If you have multiple Play:3 speakers, enter the address of the one to use. Save an empty address to reset automatic selection.</p></div>
 <div id='sonos-msg' class='msg' role='status'></div>
 </form></div>
 <div class='card' id='audio'><h2>Audio</h2>
@@ -115,12 +116,20 @@
 var $=function(id){return document.getElementById(id);};
 function msg(id,txt,type){var e=$(id);e.className='msg '+type;e.textContent=txt;}
 
+function showSonosTarget(target){
+  $('sonos-ip').value=target.ip;
+  $('sonos-target').textContent=target.bound
+    ? 'Tracking the same speaker automatically. Last known IP: '+target.ip
+    : target.ip ? 'Using '+target.ip+' until the speaker can be identified.'
+    : 'A single Play:3 is selected automatically when AirPlay starts.';
+}
+
 Shell.info().then(async function(info){
   if(!info.sonos_supported)return;
   $('sonos-card').hidden=false;
   try{
     var target=await Shell.get('/api/sonos/target');
-    $('sonos-ip').value=target.ip;
+    showSonosTarget(target);
   }catch(e){
     msg('sonos-msg',e.message,'err');
   }
@@ -132,7 +141,7 @@ $('sonos-form').addEventListener('submit',async function(event){
   button.disabled=true;
   try{
     var target=await Shell.post('/api/sonos/target',{ip:input.value.trim()});
-    input.value=target.ip;
+    showSonosTarget(target);
     msg('sonos-msg','Saved. Start a new AirPlay session to use this address.','ok');
   }catch(e){
     msg('sonos-msg',e.message,'err');

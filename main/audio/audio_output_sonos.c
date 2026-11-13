@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "audio_output.h"
-#include "audio_output_sonos.h"
 
 #include "audio_receiver.h"
 #include "audio_resample.h"
@@ -15,9 +14,9 @@
 #include "freertos/task.h"
 #include "lwip/inet.h"
 #include "lwip/sockets.h"
-#include "nvs.h"
 #include "playback_events.h"
 #include "rtsp_server.h"
+#include "sonos_discovery.h"
 #include "wifi.h"
 
 #include <stdatomic.h>
@@ -38,8 +37,6 @@
 #define CONTROL_PATH ":1400/MediaRenderer/AVTransport/Control"
 #define STREAM_PATH "/live.aac"
 #define RADIO_PREFIX "x-rincon-mp3radio://"
-#define SETTINGS_NAMESPACE "sonos"
-#define TARGET_KEY "target_ip"
 
 typedef struct {
   unsigned generation;
@@ -77,45 +74,6 @@ static void *s_encoder;
 static int16_t *s_input;
 static int s_input_bytes;
 static int s_output_bytes;
-
-static esp_err_t load_target(struct in_addr *target) {
-  nvs_handle_t nvs;
-  esp_err_t err = nvs_open(SETTINGS_NAMESPACE, NVS_READONLY, &nvs);
-  if (err == ESP_OK) {
-    err = nvs_get_u32(nvs, TARGET_KEY, &target->s_addr);
-    nvs_close(nvs);
-  }
-  return err;
-}
-
-esp_err_t sonos_get_target(char *ip, size_t len) {
-  struct in_addr target;
-  const esp_err_t err = load_target(&target);
-  if (err == ESP_ERR_NVS_NOT_FOUND) {
-    ip[0] = '\0';
-    return ESP_OK;
-  }
-  if (err != ESP_OK) return err;
-  return inet_ntop(AF_INET, &target, ip, len) ? ESP_OK : ESP_ERR_INVALID_SIZE;
-}
-
-esp_err_t sonos_set_target(const char *ip) {
-  struct in_addr target;
-  if (inet_pton(AF_INET, ip, &target) != 1) return ESP_ERR_INVALID_ARG;
-  const uint32_t addr = ntohl(target.s_addr);
-  const uint32_t first_octet = addr >> 24;
-  if (first_octet == 0 || first_octet == 127 || first_octet >= 224) {
-    return ESP_ERR_INVALID_ARG;
-  }
-
-  nvs_handle_t nvs;
-  esp_err_t err = nvs_open(SETTINGS_NAMESPACE, NVS_READWRITE, &nvs);
-  if (err != ESP_OK) return err;
-  err = nvs_set_u32(nvs, TARGET_KEY, target.s_addr);
-  if (err == ESP_OK) err = nvs_commit(nvs);
-  nvs_close(nvs);
-  return err;
-}
 
 static int transport(const char *ip, const char *action, const char *args) {
   char url[100], soap_action[112], body[1220];
@@ -161,9 +119,18 @@ static int set_stream_uri(const char *target) {
 
 static void control_task(void *arg) {
   char active_ip[INET_ADDRSTRLEN] = "";
+  transport_state_t state;
+  TickType_t wait = pdMS_TO_TICKS(2000);
   for (;;) {
-    transport_state_t state;
-    xQueueReceive(s_control, &state, portMAX_DELAY);
+    if (xQueueReceive(s_control, &state, wait) != pdTRUE) {
+      sonos_target_t target;
+      if (sonos_load_target(&target) == ESP_OK && !target.id[0]) {
+        sonos_resolve_target(&target);
+      }
+      wait = portMAX_DELAY;
+      continue;
+    }
+    wait = portMAX_DELAY;
     if (state.session != atomic_load(&s_session)) continue;
     if (active_ip[0]) {
       atomic_store(&s_target_addr, 0);
@@ -172,14 +139,17 @@ static void control_task(void *arg) {
     }
     if (!state.playing || state.session != atomic_load(&s_session)) continue;
 
-    struct in_addr target;
-    if (load_target(&target) != ESP_OK) {
-      ESP_LOGW(TAG, "Set the Sonos IPv4 address on the setup page");
+    sonos_target_t target;
+    const esp_err_t err = sonos_resolve_target(&target);
+    if (err != ESP_OK) {
+      ESP_LOGW(TAG, "Sonos unavailable or ambiguous (%s). Check the setup page.",
+               esp_err_to_name(err));
       continue;
     }
     char ip[INET_ADDRSTRLEN];
-    if (!inet_ntop(AF_INET, &target, ip, sizeof(ip))) continue;
-    atomic_store(&s_target_addr, target.s_addr);
+    if (state.session != atomic_load(&s_session) ||
+        !inet_ntop(AF_INET, &target.addr, ip, sizeof(ip))) continue;
+    atomic_store(&s_target_addr, target.addr.s_addr);
     if (set_stream_uri(ip) == 200 && state.session == atomic_load(&s_session) &&
         transport(ip, "Play", "<Speed>1</Speed>") == 200) {
       memcpy(active_ip, ip, strlen(ip) + 1);

@@ -32,8 +32,7 @@
 #include "audio_output.h"
 
 #ifdef CONFIG_AUDIO_OUTPUT_SONOS
-#include "audio_output_sonos.h"
-#include "lwip/inet.h"
+#include "sonos_discovery.h"
 #endif
 #include "esp_app_desc.h"
 #include "esp_timer.h"
@@ -672,13 +671,16 @@ static char *recv_body(httpd_req_t *req, size_t max_len) {
 
 #ifdef CONFIG_AUDIO_OUTPUT_SONOS
 static esp_err_t sonos_target_get_handler(httpd_req_t *req) {
-  char ip[INET_ADDRSTRLEN];
-  if (sonos_get_target(ip, sizeof(ip)) != ESP_OK) {
+  sonos_target_t target;
+  if (sonos_load_target(&target) != ESP_OK) {
     return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR,
-                              "Could not read Sonos address");
+                              "Could not read Sonos settings");
   }
-  char response[sizeof("{\"ip\":\"\"}") + INET_ADDRSTRLEN];
-  snprintf(response, sizeof(response), "{\"ip\":\"%s\"}", ip);
+  char ip[INET_ADDRSTRLEN] = "";
+  if (target.addr.s_addr) inet_ntop(AF_INET, &target.addr, ip, sizeof(ip));
+  char response[80];
+  snprintf(response, sizeof(response), "{\"ip\":\"%s\",\"bound\":%s}",
+           ip, target.id[0] ? "true" : "false");
   httpd_resp_set_type(req, "application/json");
   return httpd_resp_sendstr(req, response);
 }

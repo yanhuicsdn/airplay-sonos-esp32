@@ -26,15 +26,15 @@ iPhone -- Wi-Fi 上的 AirPlay --> ESP32-S3 -- HTTP AAC 流 --> Sonos Play:3
    如果无法连接，按住 **BOOT**，点按 **RESET**，松开 **BOOT** 后重试。
 
 2. 新刷写且尚未配网的板子会创建开放热点 **ESP32-AirPlay-Setup**。连上热点，在浏览器打开 **http://192.168.4.1/**，点 **Set up Wi-Fi**，让板子接入 2.4 GHz Wi-Fi。
-3. 手机切回家里的 Wi-Fi，在路由器客户端列表找到 ESP32 的 IP，用浏览器打开。在 **Sonos** 区域填入 Play:3 的 IPv4 地址，点 **Save**。音箱地址可在 Sonos App 或路由器里查看。可以用路由器的 DHCP 地址保留功能固定音箱地址。
-4. 在 iPhone 播放音乐，从控制中心的音频 AirPlay 菜单选择 **ESP32 AirPlay**。播放过程中如果改了 Sonos 地址，断开后重新连接一次 AirPlay。
+3. 手机切回家里的 Wi-Fi。局域网里只有一台 Play:3 时，ESP32 会自动发现并记住它。如果有多台，在浏览器打开 ESP32 的 IP，在 **Sonos** 区域填入要用的音箱地址。ESP32 的 IP 可以在路由器里查，音箱的 IP 可以在 Sonos App 或路由器里查。
+4. 在 iPhone 播放音乐，从控制中心的音频 AirPlay 菜单选择 **ESP32 AirPlay**。如果音箱 IP 变化，ESP32 会在下一次开始播放时按设备 ID 找到它。在 **Sonos** 设置里清空地址并保存，可以重新自动选择。
 
 发布镜像包含引导程序、分区表、应用和配置网页。请用 USB 刷写，使应用和网页一起更新。
 
 ## 播放表现
 
 - AirPlay 启动和 Play:3 的网络预缓冲可能需要几秒。建议用于听音乐，视频口型同步和 Sonos 分组播放尚未验证。
-- 能选到 AirPlay 设备但没有声音时，检查 Play:3 的 IP、房间音量，以及路由器是否开启了无线客户端隔离。音箱 IP 变化后，更新设置并重新连接 AirPlay。
+- 能选到 AirPlay 设备但没有声音时，检查 Play:3 的 IP、房间音量，以及路由器是否开启了无线客户端隔离。自动发现依赖局域网 SSDP 组播。如果路由器拦截组播，可以在配置页填入音箱当前地址。
 - 这是预览版。最初的实机测试中曾出现卡顿。发布版把 PCM 调度和 AAC 编码拆成独立任务，并记录 PCM 丢块、AAC 丢帧和编码错误，便于排查中断。
 
 ## 从源码构建
@@ -42,7 +42,7 @@ iPhone -- Wi-Fi 上的 AirPlay --> ESP32-S3 -- HTTP AAC 流 --> Sonos Play:3
 使用 [ESP-IDF v6.1](https://github.com/espressif/esp-idf/tree/v6.1)，安装 ESP32-S3 工具链并加载环境。
 
 ```sh
-git clone --recurse-submodules --branch v0.1.1 https://github.com/yanhuicsdn/airplay-sonos-esp32.git
+git clone --recurse-submodules https://github.com/yanhuicsdn/airplay-sonos-esp32.git
 cd airplay-sonos-esp32
 . /path/to/esp-idf/export.sh
 ./scripts/build-sonos.sh
