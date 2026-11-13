@@ -1,0 +1,107 @@
+// SPDX-FileCopyrightText: 2026 airplay-esp32 contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#pragma once
+
+#include "esp_err.h"
+#include "playback_events.h"
+#include <stdbool.h>
+
+/**
+ * Source-agnostic playback controller.
+ *
+ * Routes hardware button actions to the correct backend (AirPlay or
+ * Bluetooth) and notifies the remote client of changes.
+ *
+ * For AirPlay: applies volume/pause locally, then sends DACP commands
+ * to the iOS/macOS client so its UI stays in sync.
+ *
+ * For Bluetooth: sends AVRCP passthrough commands to the source device,
+ * which controls playback and sends volume back via absolute volume.
+ */
+
+/**
+ * Initialize playback control module.
+ */
+esp_err_t playback_control_init(void);
+
+/**
+ * Set the current audio source. Called by main.c when AirPlay or
+ * Bluetooth connects/disconnects.
+ */
+void playback_control_set_source(playback_source_t source);
+
+/**
+ * Get the current audio source.
+ */
+playback_source_t playback_control_get_source(void);
+
+/**
+ * Toggle play/pause.
+ */
+void playback_control_play_pause(void);
+
+/**
+ * Increase volume by one step (~3 dB).
+ */
+void playback_control_volume_up(void);
+
+/**
+ * Decrease volume by one step (~3 dB).
+ */
+void playback_control_volume_down(void);
+
+/**
+ * Skip to next track.
+ */
+void playback_control_next(void);
+
+/**
+ * Skip to previous track.
+ */
+void playback_control_prev(void);
+
+/**
+ * Toggle mute/unmute (AirPlay only — mirrors local mute logic from play/pause).
+ */
+void playback_control_toggle_mute(void);
+
+/**
+ * Set the mute state outright rather than toggling it.
+ */
+void playback_control_set_muted(bool muted);
+
+/**
+ * Set the volume in AirPlay dB (-30..0) from this device, as the buttons do:
+ * the DAC and the AirPlay session both follow, and the sender is told over
+ * DACP when it listens. Not persisted.
+ *
+ * Muted stays muted; the level is what unmuting restores.
+ */
+void playback_control_set_volume_db(float db);
+
+/**
+ * Set the volume as a percentage (0..100). Always adjusts the local DAC: the
+ * sources that call this carry an absolute volume of their own, rather than
+ * the relative steps the buttons send.
+ *
+ * Muted stays muted; the level is what unmuting restores.
+ */
+void playback_control_set_volume_percent(int percent);
+
+/**
+ * Check if currently muted.
+ */
+bool playback_control_is_muted(void);
+
+/**
+ * Get the current volume as a percentage (0..100), derived from the saved
+ * AirPlay volume in NVS. Returns 0 when muted.
+ */
+int playback_control_get_volume_percent(void);
+
+/**
+ * Get the volume as a percentage (0..100) with mute ignored. A source that
+ * reports level and mute as separate fields needs the level on its own.
+ */
+int playback_control_get_level_percent(void);
