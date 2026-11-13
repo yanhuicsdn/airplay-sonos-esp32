@@ -26,14 +26,14 @@
 
 #define TAG "sonos"
 #define PORT 8080
-#define RATE 48000
+#define RATE CONFIG_OUTPUT_SAMPLE_RATE_HZ
 #define CHANNELS 2
 #define PCM_BLOCK 352
 #define MAX_RENDER_FRAMES 810
 #define AAC_CAP 2048
 #define ENCODER_STACK_BYTES (56 * 1024)
 #define QUEUE_FRAMES 64
-#define PCM_QUEUE_BLOCKS 12
+#define PCM_QUEUE_BLOCKS 24
 #define SERVICE "urn:schemas-upnp-org:service:AVTransport:1"
 #define CONTROL_PATH ":1400/MediaRenderer/AVTransport/Control"
 #define STREAM_PATH "/live.aac"
@@ -402,7 +402,7 @@ static void render_task(void *arg) {
 esp_err_t audio_output_init(void) {
   esp_aac_enc_config_t config = {
       .sample_rate = RATE, .channel = CHANNELS, .bits_per_sample = 16,
-      .bitrate = 128000, .adts_used = true,
+      .bitrate = 96000, .adts_used = true,
   };
   if (esp_aac_enc_open(&config, sizeof(config), &s_encoder) != ESP_AUDIO_ERR_OK ||
       esp_aac_enc_get_frame_size(s_encoder, &s_input_bytes, &s_output_bytes) != ESP_AUDIO_ERR_OK ||
@@ -428,7 +428,7 @@ esp_err_t audio_output_init(void) {
   // Leave core 0 to buffered AirPlay ingest and decoding. The render task
   // preempts the encoder on core 1 to keep the PCM clock steady.
   if (xTaskCreatePinnedToCore(encoding_task, "sonos_aac", ENCODER_STACK_BYTES,
-                             NULL, 7, &s_encoding_task, 1) != pdPASS ||
+                             NULL, 8, &s_encoding_task, 1) != pdPASS ||
       xTaskCreate(http_task, "sonos_http", 6144, (void *)(intptr_t)fd, 5, &s_http) != pdPASS ||
       xTaskCreate(control_task, "sonos_control", 6144, NULL, 5, &s_controller) != pdPASS ||
       playback_events_register(on_playback, NULL) != 0) {

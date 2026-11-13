@@ -5,7 +5,7 @@
 
 #include "sdkconfig.h"
 
-#if CONFIG_OUTPUT_SAMPLE_RATE_HZ != 44100
+#if CONFIG_OUTPUT_SAMPLE_RATE_HZ != 44100 || defined(CONFIG_AUDIO_OUTPUT_SONOS)
 
 #include "resampler.h"
 
@@ -183,7 +183,7 @@ size_t audio_resample_max_output(size_t in_frames) {
   return (size_t)((double)in_frames * fixed_ratio + 2);
 }
 
-#else /* CONFIG_OUTPUT_SAMPLE_RATE_HZ == 44100 — no resampling needed */
+#else /* Native 44.1 kHz output without a resampler */
 
 bool audio_resample_init(uint32_t input_rate, uint32_t output_rate,
                          int channels) {

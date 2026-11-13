@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · [Firmware releases](https://github.com/yanhuicsdn/airplay-sonos-esp32/releases)
 
-Play music from an iPhone on a Sonos Play:3 using a USB-powered ESP32-S3. The ESP32 receives AirPlay audio, encodes it as stereo AAC, and tells the Sonos to pull the stream over the local network. A computer is needed for initial USB flashing. No DAC, analog cable, or Sonos firmware modification is required.
+Play music from an iPhone on a Sonos Play:3 using a USB-powered ESP32-S3. The ESP32 receives AirPlay audio, encodes it as 44.1 kHz stereo AAC, and tells the Sonos to pull the stream over the local network. A computer is needed for initial USB flashing. No DAC, analog cable, or Sonos firmware modification is required.
 
 ```text
 iPhone -- AirPlay over Wi-Fi --> ESP32-S3 -- AAC over HTTP --> Sonos Play:3
@@ -42,7 +42,7 @@ The release image includes the bootloader, partition table, application, and set
 Use [ESP-IDF v6.1](https://github.com/espressif/esp-idf/tree/v6.1) with its environment activated and the ESP32-S3 tools installed.
 
 ```sh
-git clone --recurse-submodules --branch v0.1.0 https://github.com/yanhuicsdn/airplay-sonos-esp32.git
+git clone --recurse-submodules --branch v0.1.1 https://github.com/yanhuicsdn/airplay-sonos-esp32.git
 cd airplay-sonos-esp32
 . /path/to/esp-idf/export.sh
 ./scripts/build-sonos.sh

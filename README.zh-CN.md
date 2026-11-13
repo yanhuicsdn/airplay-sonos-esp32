@@ -2,7 +2,7 @@
 
 [English](README.md) · [固件下载](https://github.com/yanhuicsdn/airplay-sonos-esp32/releases)
 
-用一块 USB 供电的 ESP32-S3，把 iPhone 上的音乐投到 Sonos Play:3。ESP32 接收 AirPlay 音频，编码成立体声 AAC，再让 Sonos 通过局域网拉取音频流。电脑只在首次 USB 刷写时用到，无需外接 DAC 或音频线，也无需修改 Sonos 固件。
+用一块 USB 供电的 ESP32-S3，把 iPhone 上的音乐投到 Sonos Play:3。ESP32 接收 AirPlay 音频，编码成 44.1 kHz 立体声 AAC，再让 Sonos 通过局域网拉取音频流。电脑只在首次 USB 刷写时用到，无需外接 DAC 或音频线，也无需修改 Sonos 固件。
 
 ```text
 iPhone -- Wi-Fi 上的 AirPlay --> ESP32-S3 -- HTTP AAC 流 --> Sonos Play:3
@@ -42,7 +42,7 @@ iPhone -- Wi-Fi 上的 AirPlay --> ESP32-S3 -- HTTP AAC 流 --> Sonos Play:3
 使用 [ESP-IDF v6.1](https://github.com/espressif/esp-idf/tree/v6.1)，安装 ESP32-S3 工具链并加载环境。
 
 ```sh
-git clone --recurse-submodules --branch v0.1.0 https://github.com/yanhuicsdn/airplay-sonos-esp32.git
+git clone --recurse-submodules --branch v0.1.1 https://github.com/yanhuicsdn/airplay-sonos-esp32.git
 cd airplay-sonos-esp32
 . /path/to/esp-idf/export.sh
 ./scripts/build-sonos.sh
